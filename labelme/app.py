@@ -1255,6 +1255,8 @@ class MainWindow(QtWidgets.QMainWindow):
             edit_flags = True
             edit_group_id = True
             edit_description = True
+            edit_text_value = True
+            edit_text_type = True
         else:
             edit_text = all(item.shape().label == shape.label for item in items[1:])
             edit_flags = all(item.shape().flags == shape.flags for item in items[1:])
@@ -1264,6 +1266,12 @@ class MainWindow(QtWidgets.QMainWindow):
             edit_description = all(
                 item.shape().description == shape.description for item in items[1:]
             )
+            edit_text_value = all(
+                item.shape().text_value == shape.text_value for item in items[1:]
+            )
+            edit_text_type = all(
+                item.shape().text_type == shape.text_type for item in items[1:]
+            )
 
         if not edit_text:
             self.labelDialog.edit.setDisabled(True)
@@ -1272,13 +1280,21 @@ class MainWindow(QtWidgets.QMainWindow):
             self.labelDialog.edit_group_id.setDisabled(True)
         if not edit_description:
             self.labelDialog.editDescription.setDisabled(True)
+        if not edit_text_value:
+            self.labelDialog.edit_text_value.setDisabled(True)
+        if not edit_text_type:
+            self.labelDialog.combo_text_type.setDisabled(True)
 
-        text, flags, group_id, description = self.labelDialog.popUp(
-            text=shape.label if edit_text else "",
-            flags=shape.flags if edit_flags else None,
-            group_id=shape.group_id if edit_group_id else None,
-            description=shape.description if edit_description else None,
-            flags_disabled=not edit_flags,
+        text, flags, group_id, description, text_value, text_type = (
+            self.labelDialog.popUp(
+                text=shape.label if edit_text else "",
+                flags=shape.flags if edit_flags else None,
+                group_id=shape.group_id if edit_group_id else None,
+                description=shape.description if edit_description else None,
+                flags_disabled=not edit_flags,
+                text_value=shape.text_value if edit_text_value else None,
+                text_type=shape.text_type if edit_text_type else None,
+            )
         )
 
         if not edit_text:
@@ -1288,6 +1304,10 @@ class MainWindow(QtWidgets.QMainWindow):
             self.labelDialog.edit_group_id.setDisabled(False)
         if not edit_description:
             self.labelDialog.editDescription.setDisabled(False)
+        if not edit_text_value:
+            self.labelDialog.edit_text_value.setDisabled(False)
+        if not edit_text_type:
+            self.labelDialog.combo_text_type.setDisabled(False)
 
         if text is None:
             assert flags is None
@@ -1316,13 +1336,19 @@ class MainWindow(QtWidgets.QMainWindow):
                 shape.group_id = group_id
             if edit_description:
                 shape.description = description
+            if edit_text_value:
+                shape.text_value = text_value
+            if edit_text_type:
+                shape.text_type = text_type
 
             self._update_shape_color(shape)
             if shape.group_id is None:
                 r, g, b = shape.fill_color.getRgb()[:3]
+                display_text = html.escape(shape.label)
+                if shape.text_value:
+                    display_text += f" <i>{html.escape(shape.text_value)}</i>"
                 item.setText(
-                    f"{html.escape(shape.label)} "
-                    f'<font color="#{r:02x}{g:02x}{b:02x}">●</font>'
+                    f'{display_text} <font color="#{r:02x}{g:02x}{b:02x}">●</font>'
                 )
             else:
                 item.setText(f"{shape.label} ({shape.group_id})")
@@ -1388,8 +1414,14 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self._update_shape_color(shape)
         r, g, b = shape.fill_color.getRgb()[:3]
+        display_text = html.escape(text)
+        if shape.group_id is None and shape.text_value:
+            display_text = (
+                f"{html.escape(shape.label)} "
+                f"<i>{html.escape(shape.text_value)}</i>"
+            )
         label_list_item.setText(
-            f'{html.escape(text)} <font color="#{r:02x}{g:02x}{b:02x}">●</font>'
+            f'{display_text} <font color="#{r:02x}{g:02x}{b:02x}">●</font>'
         )
 
     def _update_shape_color(self, shape):
@@ -1460,6 +1492,8 @@ class MainWindow(QtWidgets.QMainWindow):
                 group_id=shape_dict["group_id"],
                 description=shape_dict["description"],
                 mask=shape_dict["mask"],
+                text_value=shape_dict.get("text_value", ""),
+                text_type=shape_dict.get("text_type", "Printed"),
             )
             for x, y in shape_dict["points"]:
                 shape.addPoint(QtCore.QPointF(x, y))
@@ -1507,6 +1541,8 @@ class MainWindow(QtWidgets.QMainWindow):
                     mask=None
                     if s.mask is None
                     else utils.img_arr_to_b64(s.mask.astype(np.uint8)),
+                    text_value=s.text_value,
+                    text_type=s.text_type,
                 )
             )
             return data
@@ -1594,9 +1630,13 @@ class MainWindow(QtWidgets.QMainWindow):
         flags = {}
         group_id = None
         description = ""
+        text_value = ""
+        text_type = "Printed"
         if self._config["display_label_popup"] or not text:
             previous_text = self.labelDialog.edit.text()
-            text, flags, group_id, description = self.labelDialog.popUp(text)
+            text, flags, group_id, description, text_value, text_type = (
+                self.labelDialog.popUp(text)
+            )
             if not text:
                 self.labelDialog.edit.setText(previous_text)
 
@@ -1613,6 +1653,8 @@ class MainWindow(QtWidgets.QMainWindow):
             shape = self.canvas.setLastLabel(text, flags)
             shape.group_id = group_id
             shape.description = description
+            shape.text_value = text_value
+            shape.text_type = text_type
             self.addLabel(shape)
             self.actions.editMode.setEnabled(True)
             self.actions.undoLastPoint.setEnabled(False)

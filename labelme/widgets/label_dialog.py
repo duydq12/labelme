@@ -97,6 +97,20 @@ class LabelDialog(QtWidgets.QDialog):
         self.editDescription.setPlaceholderText("Label description")
         self.editDescription.setFixedHeight(50)
         layout.addWidget(self.editDescription)
+        # text value
+        layout_text_value = QtWidgets.QHBoxLayout()
+        self.edit_text_value = QtWidgets.QLineEdit()
+        self.edit_text_value.setPlaceholderText("Text value")
+        layout_text_value.addWidget(QtWidgets.QLabel("Text value:"))
+        layout_text_value.addWidget(self.edit_text_value)
+        layout.addLayout(layout_text_value)
+        # text type
+        layout_text_type = QtWidgets.QHBoxLayout()
+        self.combo_text_type = QtWidgets.QComboBox()
+        self.combo_text_type.addItems(["Printed", "Handwriting"])
+        layout_text_type.addWidget(QtWidgets.QLabel("Text type:"))
+        layout_text_type.addWidget(self.combo_text_type)
+        layout.addLayout(layout_text_type)
         self.setLayout(layout)
         # completion
         completer = QtWidgets.QCompleter()
@@ -191,6 +205,12 @@ class LabelDialog(QtWidgets.QDialog):
             return int(group_id)
         return None
 
+    def getTextValue(self):
+        return self.edit_text_value.text().strip()
+
+    def getTextType(self):
+        return self.combo_text_type.currentText()
+
     def popUp(
         self,
         text=None,
@@ -199,6 +219,8 @@ class LabelDialog(QtWidgets.QDialog):
         group_id=None,
         description=None,
         flags_disabled: bool = False,
+        text_value=None,
+        text_type=None,
     ):
         if self._fit_to_content["row"]:
             self.labelList.setMinimumHeight(
@@ -226,6 +248,13 @@ class LabelDialog(QtWidgets.QDialog):
             self.edit_group_id.clear()
         else:
             self.edit_group_id.setText(str(group_id))
+        # pre-fill text_value
+        self.edit_text_value.setText(text_value if text_value is not None else "")
+        # pre-fill text_type
+        if text_type is not None and text_type in ["Printed", "Handwriting"]:
+            self.combo_text_type.setCurrentText(text_type)
+        else:
+            self.combo_text_type.setCurrentIndex(0)
         items = self.labelList.findItems(text, QtCore.Qt.MatchFixedString)
         if items:
             if len(items) != 1:
@@ -242,6 +271,8 @@ class LabelDialog(QtWidgets.QDialog):
                 self.getFlags(),
                 self.getGroupId(),
                 self.editDescription.toPlainText(),
+                self.getTextValue(),
+                self.getTextType(),
             )
         else:
-            return None, None, None, None
+            return None, None, None, None, None, None

@@ -37,6 +37,8 @@ class ShapeDict(TypedDict):
     group_id: int | None
     mask: NDArray[np.bool] | None
     other_data: dict
+    text_value: str
+    text_type: str
 
 
 def _load_shape_json_obj(shape_json_obj: dict) -> ShapeDict:
@@ -48,6 +50,8 @@ def _load_shape_json_obj(shape_json_obj: dict) -> ShapeDict:
         "flags",
         "description",
         "mask",
+        "text_value",
+        "text_type",
     }
 
     assert "label" in shape_json_obj, f"label is required: {shape_json_obj}"
@@ -109,6 +113,20 @@ def _load_shape_json_obj(shape_json_obj: dict) -> ShapeDict:
 
     other_data = {k: v for k, v in shape_json_obj.items() if k not in SHAPE_KEYS}
 
+    text_value: str = ""
+    if shape_json_obj.get("text_value") is not None:
+        assert isinstance(shape_json_obj["text_value"], str), (
+            f"text_value must be str: {shape_json_obj['text_value']}"
+        )
+        text_value = shape_json_obj["text_value"]
+
+    text_type: str = "Printed"
+    if shape_json_obj.get("text_type") is not None:
+        assert isinstance(shape_json_obj["text_type"], str), (
+            f"text_type must be str: {shape_json_obj['text_type']}"
+        )
+        text_type = shape_json_obj["text_type"]
+
     loaded: ShapeDict = ShapeDict(
         label=label,
         points=points,
@@ -118,6 +136,8 @@ def _load_shape_json_obj(shape_json_obj: dict) -> ShapeDict:
         group_id=group_id,
         mask=mask,
         other_data=other_data,
+        text_value=text_value,
+        text_type=text_type,
     )
     assert set(loaded.keys()) == SHAPE_KEYS | {"other_data"}
     return loaded

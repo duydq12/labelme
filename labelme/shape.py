@@ -50,6 +50,8 @@ class Shape:
         group_id=None,
         description=None,
         mask=None,
+        text_value=None,
+        text_type=None,
     ):
         self.label = label
         self.group_id = group_id
@@ -65,6 +67,8 @@ class Shape:
         self.description = description
         self.other_data = {}
         self.mask = mask
+        self.text_value = text_value or ""
+        self.text_type = text_type or "Printed"
 
         self._highlightIndex = None
         self._highlightMode = self.NEAR_VERTEX

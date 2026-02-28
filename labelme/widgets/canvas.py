@@ -854,6 +854,46 @@ class Canvas(QtWidgets.QWidget):
             for s in self.selectedShapesCopy:
                 s.paint(p)
 
+        # Draw text_value above each shape's bounding box.
+        # The painter still has transform: device = world + offset*scale,
+        # so we pass world coords = bbox * scale (no offset needed here).
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        font.setBold(True)
+        p.setFont(font)
+        fm = QtGui.QFontMetrics(font)
+        for shape in self.shapes:
+            if not self.isVisible(shape):
+                continue
+            if not getattr(shape, "text_value", ""):
+                continue
+
+            bbox = shape.boundingRect()
+            # world coords that painter maps to device = bbox_device_pos
+            x = int(bbox.left() * self.scale)
+            y = int(bbox.top() * self.scale)
+
+            text_type = getattr(shape, "text_type", "Printed")
+            display = f"{shape.text_value}  [{text_type}]"
+            text_width = fm.horizontalAdvance(display)
+            text_height = fm.height()
+            padding = 3
+            bg_rect = QtCore.QRect(
+                x,
+                y - text_height - padding * 2,
+                text_width + padding * 2,
+                text_height + padding * 2,
+            )
+            # dark semi-transparent background
+            p.fillRect(bg_rect, QtGui.QColor(0, 0, 0, 80))
+            # white text
+            p.setPen(QtGui.QColor(255, 255, 255, 255))
+            p.drawText(
+                x + padding,
+                y - padding,
+                display,
+            )
+
         if not self.current or self.createMode not in [
             "polygon",
             "ai_polygon",
